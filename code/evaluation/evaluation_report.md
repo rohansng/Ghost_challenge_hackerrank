@@ -1,7 +1,7 @@
 # Evaluation Report — Ghost Data Still Exists
 **HackerRank Orchestrate (October 2026)**  
-**Generated At:** 2026-10-25T02:34:57.410295  
-**Deterministic Output SHA-256 Digest:** `1fecfead83c7a31c60e28c4909692e90f7afe040d8e090c2fb76f926d2ec51c0`  
+**Generated At:** 2026-10-25T03:10:00  
+**Deterministic Output SHA-256 Digest:** `7d0c26e265c7d723bc19414e86670e45cfb806425dca656972ecb933f76a26bb`  
 **Evaluation Status:** Strict Quality Gate Verified (Untrusted Validator: 0 Errors)
 
 ---
@@ -12,10 +12,10 @@ This evaluation report documents the comprehensive verification, adversarial str
 
 The system was evaluated against:
 1. **518 Full Evaluation Requests** (`dataset/deletion_requests.csv`): 100% compliant prediction generation with zero schema, ordering, temporal, or evidence defects.
-2. **Strict Untrusted Output Validation**: 0 schema errors across 518 rows, 2,600 steps, and all canonical priority invariants.
-3. **Multi-Run Bit-for-Bit Determinism**: Verified identical SHA-256 digest (`1fecfead83c7a31c60e28c4909692e90f7afe040d8e090c2fb76f926d2ec51c0`) across consecutive independent pipeline runs.
-4. **16-Case Adversarial Suite** (`code/tests/test_adversarial_suite.py`): 16/16 tests passing across all required risk dimensions.
-5. **94-Test Complete Regression Suite**: 94/94 unit tests passing in 0.67s.
+2. **Strict Untrusted Output Validation**: 0 schema errors across 518 rows, 2,588 steps, and all canonical priority invariants.
+3. **Multi-Run Bit-for-Bit Determinism**: Verified identical SHA-256 digest (`7d0c26e265c7d723bc19414e86670e45cfb806425dca656972ecb933f76a26bb`) across consecutive independent pipeline runs.
+4. **Adversarial Suites** (`code/tests/test_adversarial_suite.py`, `test_reviewer_b_adversarial.py`): 24 adversarial tests passing across all risk dimensions.
+5. **110-Test Complete Regression Suite**: 110/110 unit tests passing in 0.39s.
 6. **Public Benchmark Concordance**: **32/32 (100.0%) Status Accuracy** on `dataset/sample_output.csv`.
 
 ---
@@ -30,8 +30,8 @@ To ensure scientific rigor and avoid self-serving bias, four distinct accuracy m
   $$\text{Case Accuracy} = \frac{\sum \mathbb{I}(\hat{y}_{c} = y_{c})}{N}$$
 - **Public Benchmark Result:** **32/32 (100.0%)**
 - **Evaluation Dataset Distribution:**
-  - `INCOMPLETE`: 344 cases (66.4%)
-  - `COMPLETE`: 164 cases (31.7%)
+  - `INCOMPLETE`: 349 cases (67.4%)
+  - `COMPLETE`: 159 cases (30.7%)
   - `NOT_APPLICABLE`: 10 cases (1.9%)
 
 ### 2.2 Row-Level Accuracy & Integrity

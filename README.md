@@ -286,12 +286,12 @@ The evaluation metrics from the final full-dataset run are detailed in [`evaluat
 | **Total Evaluation Cases** | **518** | Exactly 518 | **PASSED** |
 | **Output Schema Validation Errors** | **0** | 0 errors | **PASSED** |
 | **Bit-for-Bit Determinism Across Runs** | **100.0%** | SHA-256 Identical | **PASSED** |
-| **Unit & Adversarial Regression Tests** | **102 / 102** | 100% Passing | **PASSED** |
-| **Execution Duration (518 Cases)** | **0.19 seconds** | < 120 seconds | **PASSED** |
-| **Throughput** | **2,726 cases/sec** | Real-time audit | **PASSED** |
+| **Unit & Adversarial Regression Tests** | **110 / 110** | 100% Passing | **PASSED** |
+| **Execution Duration (518 Cases)** | **0.10 seconds** | < 120 seconds | **PASSED** |
+| **Throughput** | **5,180 cases/sec** | Real-time audit | **PASSED** |
 | **Runtime Model Calls** | **0** | Deterministic core | **PASSED** |
 | **Runtime Token Cost** | **$0.00** | Budget compliant | **PASSED** |
-| **Status Distribution** | `INCOMPLETE`: 344<br>`COMPLETE`: 164<br>`NOT_APPLICABLE`: 10 | Statistically sound | **PASSED** |
+| **Status Distribution** | `INCOMPLETE`: 349<br>`COMPLETE`: 159<br>`NOT_APPLICABLE`: 10 | Statistically sound | **PASSED** |
 
 ---
 

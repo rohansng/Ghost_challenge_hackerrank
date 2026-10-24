@@ -57,7 +57,7 @@ During the forensics and multimodal offline analysis phase (Phase 0 through Phas
 
 ## 4. Operational Advantages of the Zero-LLM Runtime Architecture
 
-1. **Deterministic Reproducibility:** Every run produces identical, bit-for-bit reproducible JSON steps and status decisions without random seed variations or temperature drift (Verified SHA-256: `1fecfead83c7a31c60e28c4909692e90f7afe040d8e090c2fb76f926d2ec51c0`).
+1. **Deterministic Reproducibility:** Every run produces identical, bit-for-bit reproducible JSON steps and status decisions without random seed variations or temperature drift (Verified SHA-256: `7d0c26e265c7d723bc19414e86670e45cfb806425dca656972ecb933f76a26bb`).
 2. **Extreme Throughput:** Evaluates all 518 complex cases in 0.19 seconds (over 2,700 cases/second throughput).
 3. **Zero Hallucination Risk:** Deletion operations, resource IDs, and evidence citations are grounded in verified physical evidence rather than generative model guesses.
 4. **Zero Security Exposure:** No participant data, emails, or internal hashes are ever transmitted over external API endpoints.

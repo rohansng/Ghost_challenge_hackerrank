@@ -48,7 +48,7 @@ class JsonExtractor:
                         if isinstance(items, list):
                             for idx, item in enumerate(items):
                                 obs = self._parse_service_export_item(
-                                    svc_name, sub_cat, item, file_id, rel_path, exported_at, idx
+                                    svc_name, sub_cat, item, file_id, rel_path, manifest_captured_at, idx
                                 )
                                 if obs:
                                     observations.append(obs)
@@ -63,18 +63,17 @@ class JsonExtractor:
                 records = snapshot.get("records", [])
                 for r_idx, rec in enumerate(records):
                     obs = self._parse_snapshot_record(
-                        data_store, collection, rec, file_id, rel_path, snap_time, f"{s_idx}_{r_idx}"
+                        data_store, collection, rec, file_id, rel_path, manifest_captured_at, f"{s_idx}_{r_idx}", snap_time=snap_time
                     )
                     if obs:
                         observations.append(obs)
 
         # 3. records list files (e.g. connector_configurations, security_audit_ledger, customer_export_jobs)
         elif "records" in data:
-            captured_at = parse_iso(data.get("captured_at") or data.get("exported_at")) or manifest_captured_at
             collection = data.get("collection", "")
             for idx, rec in enumerate(data["records"]):
                 obs = self._parse_generic_record(
-                    rec, file_id, rel_path, captured_at, collection, idx
+                    rec, file_id, rel_path, manifest_captured_at, collection, idx
                 )
                 if obs:
                     observations.append(obs)
@@ -299,6 +298,7 @@ class JsonExtractor:
         rel_path: str,
         captured_at: Optional[datetime],
         seq: str,
+        snap_time: Optional[datetime] = None,
     ) -> Optional[EvidenceObservation]:
         system_override = rec.get("system") or rec.get("service")
         if system_override:
@@ -316,7 +316,7 @@ class JsonExtractor:
         )
         phone = rec.get("phone") or rec.get("owner_phone") or rec.get("requester_phone")
         email_hash = rec.get("email_hash")
-        obs_time = parse_iso(rec.get("recorded_at") or rec.get("updated_at") or rec.get("captured_at")) or captured_at
+        obs_time = parse_iso(rec.get("recorded_at") or rec.get("updated_at") or rec.get("captured_at")) or snap_time or captured_at
 
         # Determine category
         rec_type = rec.get("record_type")
