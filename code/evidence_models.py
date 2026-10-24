@@ -77,3 +77,4 @@ class ResourceStateSnapshot:
     conflicting_observations: List[EvidenceObservation] = field(default_factory=list)
     resolution_rationale: str = ""
     is_compliant: bool = False
+    metadata: Dict[str, Any] = field(default_factory=dict)

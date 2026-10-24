@@ -5,6 +5,10 @@ HackerRank Orchestrate October 2026 Challenge Entry Point.
 
 import os
 import sys
+
+# Ensure repository root is in sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import csv
 import json
 import time
