@@ -6,9 +6,11 @@ duplicate detection, null checking, and diagnostic logging.
 
 import csv
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple, Any
 
+from code.exceptions import DatasetLoadingError
 from code.models import (
     UserIdentityRecord,
     AuditLogRecord,
@@ -59,7 +61,7 @@ class DataLoader:
 
     def load_deletion_requests(self, filename: str = "deletion_requests.csv") -> List[DeletionRequestRecord]:
         """Loads and validates deletion requests."""
-        path = f"{self.dataset_dir}/{filename}"
+        path = os.path.join(self.dataset_dir, filename)
         records: List[DeletionRequestRecord] = []
         seen_case_ids: Dict[str, int] = {}
         expected_cols = {"case_id", "email", "requested_at", "reported_status", "reported_at", "audit_at", "request_text"}
@@ -68,7 +70,7 @@ class DataLoader:
             reader = csv.DictReader(f)
             if not expected_cols.issubset(set(reader.fieldnames or [])):
                 missing = expected_cols - set(reader.fieldnames or [])
-                raise ValueError(f"Missing required columns in {filename}: {missing}")
+                raise DatasetLoadingError(f"Missing required columns in {filename}: {missing}")
 
             for line_no, row in enumerate(reader, start=2):
                 cid = row["case_id"].strip()
@@ -103,7 +105,7 @@ class DataLoader:
 
     def load_user_identities(self, filename: str = "user_identities.csv") -> Dict[str, UserIdentityRecord]:
         """Loads canonical current user identities keyed by user_id."""
-        path = f"{self.dataset_dir}/{filename}"
+        path = os.path.join(self.dataset_dir, filename)
         identities: Dict[str, UserIdentityRecord] = {}
         seen_emails: Dict[str, str] = {}
         expected_cols = {"user_id", "name", "email", "phone", "email_hash", "updated_at"}
@@ -112,7 +114,7 @@ class DataLoader:
             reader = csv.DictReader(f)
             if not expected_cols.issubset(set(reader.fieldnames or [])):
                 missing = expected_cols - set(reader.fieldnames or [])
-                raise ValueError(f"Missing required columns in {filename}: {missing}")
+                raise DatasetLoadingError(f"Missing required columns in {filename}: {missing}")
 
             for line_no, row in enumerate(reader, start=2):
                 uid = row["user_id"].strip()
@@ -146,7 +148,7 @@ class DataLoader:
 
     def load_user_audit_log(self, filename: str = "user_audit_log.csv") -> List[AuditLogRecord]:
         """Loads historical user audit entries."""
-        path = f"{self.dataset_dir}/{filename}"
+        path = os.path.join(self.dataset_dir, filename)
         records: List[AuditLogRecord] = []
         expected_cols = {"audit_id", "user_id", "event_time", "field_name", "old_value", "new_value"}
 
@@ -154,7 +156,7 @@ class DataLoader:
             reader = csv.DictReader(f)
             if not expected_cols.issubset(set(reader.fieldnames or [])):
                 missing = expected_cols - set(reader.fieldnames or [])
-                raise ValueError(f"Missing required columns in {filename}: {missing}")
+                raise DatasetLoadingError(f"Missing required columns in {filename}: {missing}")
 
             for line_no, row in enumerate(reader, start=2):
                 aid = row["audit_id"].strip()
@@ -178,7 +180,7 @@ class DataLoader:
 
     def load_system_activity(self, filename: str = "system_activity.csv") -> List[SystemActivityRecord]:
         """Loads global operations activity stream."""
-        path = f"{self.dataset_dir}/{filename}"
+        path = os.path.join(self.dataset_dir, filename)
         records: List[SystemActivityRecord] = []
         expected_cols = {
             "activity_id", "event_time", "event_type", "source_system",
@@ -189,7 +191,7 @@ class DataLoader:
             reader = csv.DictReader(f)
             if not expected_cols.issubset(set(reader.fieldnames or [])):
                 missing = expected_cols - set(reader.fieldnames or [])
-                raise ValueError(f"Missing required columns in {filename}: {missing}")
+                raise DatasetLoadingError(f"Missing required columns in {filename}: {missing}")
 
             for line_no, row in enumerate(reader, start=2):
                 try:
@@ -213,7 +215,7 @@ class DataLoader:
 
     def load_deletion_rules(self, filename: str = "deletion_rules.csv") -> Dict[str, DeletionRuleRecord]:
         """Loads deletion policy specifications."""
-        path = f"{self.dataset_dir}/{filename}"
+        path = os.path.join(self.dataset_dir, filename)
         rules: Dict[str, DeletionRuleRecord] = {}
         expected_cols = {"rule_id", "data_category", "condition", "required_action"}
 
@@ -221,7 +223,7 @@ class DataLoader:
             reader = csv.DictReader(f)
             if not expected_cols.issubset(set(reader.fieldnames or [])):
                 missing = expected_cols - set(reader.fieldnames or [])
-                raise ValueError(f"Missing required columns in {filename}: {missing}")
+                raise DatasetLoadingError(f"Missing required columns in {filename}: {missing}")
 
             for line_no, row in enumerate(reader, start=2):
                 rid = row["rule_id"].strip()
@@ -241,7 +243,7 @@ class DataLoader:
 
     def load_evidence_files(self, filename: str = "evidence_files.csv") -> Dict[str, EvidenceFileRecord]:
         """Loads evidence files manifest."""
-        path = f"{self.dataset_dir}/{filename}"
+        path = os.path.join(self.dataset_dir, filename)
         manifest: Dict[str, EvidenceFileRecord] = {}
         expected_cols = {"file_id", "file_path", "origin", "captured_at"}
 
@@ -249,7 +251,7 @@ class DataLoader:
             reader = csv.DictReader(f)
             if not expected_cols.issubset(set(reader.fieldnames or [])):
                 missing = expected_cols - set(reader.fieldnames or [])
-                raise ValueError(f"Missing required columns in {filename}: {missing}")
+                raise DatasetLoadingError(f"Missing required columns in {filename}: {missing}")
 
             for line_no, row in enumerate(reader, start=2):
                 fid = row["file_id"].strip()

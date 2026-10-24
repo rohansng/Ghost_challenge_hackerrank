@@ -9,7 +9,7 @@ def package_submission(zip_path="code.zip"):
     included_count = 0
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         # Add root files
-        for root_file in ["README.md", "AGENTS.md", "problem_statement.md", ".gitignore"]:
+        for root_file in ["README.md", "AGENTS.md", "problem_statement.md", "agent_design.md", ".gitignore", ".gitattributes"]:
             if os.path.exists(root_file):
                 zf.write(root_file, root_file)
                 included_count += 1
