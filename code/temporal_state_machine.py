@@ -40,6 +40,8 @@ class TemporalStateMachine:
                 continue
             if cap_time and cap_time > audit_at:
                 continue
+            if o.observed_state == ObservedState.UNKNOWN:
+                continue
             valid_obs.append(o)
 
         # 2. Group by resource_id
@@ -115,7 +117,7 @@ class TemporalStateMachine:
             chosen_obs = sorted_obs[-1]
 
         proven_state = chosen_obs.observed_state
-        cited_evidence_id = chosen_obs.evidence_id if chosen_obs.extraction_method != "system_activity_stream" else ""
+        cited_evidence_id = chosen_obs.evidence_id or ""
 
         # Determine compliance based on category
         is_compliant = self._check_compliance(data_cat, proven_state)

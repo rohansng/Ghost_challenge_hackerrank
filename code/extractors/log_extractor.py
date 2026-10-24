@@ -49,7 +49,7 @@ class LogExtractor:
                 ctx = trace_context.setdefault(tid, {})
                 for k, v1, v2 in re.findall(r'(\b\w+)=(?:\"([^\"]*)\"|(\S+))', line):
                     v = v1 if v1 else v2
-                    if k in ("email", "lookup_key", "customer_email") and "@" in v:
+                    if k in ("email", "lookup_key", "customer_email", "subject_key", "match_key", "subject_reference") and "@" in v:
                         ctx["email"] = v.lower()
                     elif k in ("user_id", "customer_reference", "subject_reference") and v.startswith("user_"):
                         ctx["user_id"] = v
@@ -201,10 +201,13 @@ class LogExtractor:
             is_enabled = kv_pairs["enabled"].lower() == "true"
             state = ObservedState.ACTIVE if is_enabled else ObservedState.DISABLED
 
-        # Backup restore_allowed check
+        # Backup restore_allowed or deletion_block check
         elif "restore_allowed" in kv_pairs:
             is_allowed = kv_pairs["restore_allowed"].lower() == "true"
             state = ObservedState.ACTIVE if is_allowed else ObservedState.BLOCKED
+        elif "deletion_block" in kv_pairs:
+            is_blocked = kv_pairs["deletion_block"].lower() == "true"
+            state = ObservedState.BLOCKED if is_blocked else ObservedState.ACTIVE
 
         # Support marker check
         elif "marker_found" in kv_pairs:
