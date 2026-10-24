@@ -245,7 +245,7 @@ To ensure scientific rigor and avoid self-serving bias, four distinct accuracy m
   - `system_id` and `resource_id`: Non-empty grounded identifiers.
   - `operation` and `state`: Valid pairings strictly adhering to challenge §6.4.
   - `evidence_id`: 
-    - `COMPLETE` cases: Non-empty, citing valid visible evidence (`evidence_\d+`, `activity_\d+`, `audit_\d+`).
+    - `COMPLETE` cases: Non-empty, citing valid visible evidence (`evidence_\\d+`, `activity_\\d+`, `audit_\\d+`).
     - `INCOMPLETE` cases: Findings cite valid visible evidence; future remediations and future verifications MUST be empty string (`""`).
     - `NOT_APPLICABLE` cases: Exactly `[]`.
 - **Validation Metric:** **2,600 / 2,600 Steps Valid (100.0%)**; 0 schema or evidence errors.
@@ -270,8 +270,8 @@ To stress-test edge cases not explicitly guaranteed in simple test datasets, 16 
 |---|---|---|---|---|---|
 | 1 | `test_01_historical_email` | Request uses older changed email alias; records remain under current email | `INCOMPLETE` | Historical aliases cannot evade audit; ghost data under all identities found | **PASSED** |
 | 2 | `test_02_identifier_collision` | Distinct users share an ambiguous phone number; target requests deletion | `COMPLETE` | Multi-tenant isolation; no collateral deletion of unrelated user data | **PASSED** |
-| 3 | `test_03_stale_evidence` | Stale $t_0$ presence record superseded by subsequent $t_1 < audit\_at$ deletion | `COMPLETE` | No false positives from outdated historical logs | **PASSED** |
-| 4 | `test_04_post_audit_evidence` | Record was present at $audit\_at$; deleted only after $audit\_at$ | `INCOMPLETE` | Post-audit remediation claims cannot retroactively certify pre-audit compliance | **PASSED** |
+| 3 | `test_03_stale_evidence` | Stale $t_0$ presence record superseded by subsequent $t_1 < \\text{{audit\\_at}}$ deletion | `COMPLETE` | No false positives from outdated historical logs | **PASSED** |
+| 4 | `test_04_post_audit_evidence` | Record was present at $\\text{{audit\\_at}}$; deleted only after $\\text{{audit\\_at}}$ | `INCOMPLETE` | Post-audit remediation claims cannot retroactively certify pre-audit compliance | **PASSED** |
 | 5 | `test_05_active_sync` | Primary DB deleted, but active replication sync flow runs to secondary cache | `INCOMPLETE` | Active recreation pathways prevent declaration of completion until severed | **PASSED** |
 | 6 | `test_06_inactive_sync` | Sync connector is configured but explicitly verified `disabled=True` | `COMPLETE` | Inactive dormant pipelines do not generate false positive remediation actions | **PASSED** |
 | 7 | `test_07_backup_restore_risk` | Backup exists in cold storage with `deletion_block=False` and `restore_allowed=True` | `INCOMPLETE` | Backup archives without restore sanitization/blocks fail deletion guarantee | **PASSED** |
@@ -295,7 +295,7 @@ During Phase 7 untrusted validation, all discovered anomalies were systematicall
 |---|---|---|---|
 | `IDENTITY` | Identifier resolution, alias matching, multi-hop linking | Historical email resolution in upper-case domains | Normalized all identity lookups with case-insensitive lowercase matching |
 | `EVIDENCE` | File parsing, trace correlation, missing observations | 28 cases initially had 0 observations due to unparsed log formats | Enhanced `LogExtractor` to parse RFC 5424 Syslog, Pipe-delimited logs, bracketed traces, and JSON logs with multi-line trace correlation |
-| `TEMPORAL` | Cutoff filtering, snapshot state evaluation | Post-audit observations contaminating cutoff state | Enforced strict $t \\le audit\_at$ temporal boundary across all extractors |
+| `TEMPORAL` | Cutoff filtering, snapshot state evaluation | Post-audit observations contaminating cutoff state | Enforced strict t <= audit_at temporal boundary across all extractors |
 | `POLICY` | Rule parsing, action mapping, state constraints | `LINK_RESOURCE_IDENTITY` mapped to `UNKNOWN` | Mapped successful `LINK_RESOURCE_IDENTITY` to `ObservedState.PRESENT` in `evidence_normalizer.py` |
 | `RECREATION` | Active sync flow detection, restore risks | Missed unblocked backups with `deletion_block=false` | Added `deletion_block` and `restore_allowed` evaluators in `LogExtractor` and `JsonExtractor` |
 | `RETENTION` | Statutory preservation, tombstones | Tombstone PII stripping vs internal user reference | Permitted `ACCOUNT_TOMBSTONE` with stable reference and verified PII redaction |
@@ -323,7 +323,7 @@ All Phase 7 quality gate criteria have been satisfied:
 - [x] Output schema strictly valid across all 518 rows (0 validator errors).
 - [x] Output is 100% deterministic bit-for-bit across multiple runs (SHA-256 verified).
 - [x] Zero fabricated evidence IDs; every cited ID exists in visible manifests.
-- [x] Complete cases provide non-empty evidence-backed proof at $audit\_at$.
+- [x] Complete cases provide non-empty evidence-backed proof at $audit\\_at$.
 - [x] Post-remediation actions in incomplete cases have empty `evidence_id`.
 - [x] Canonical phase and operation priority ordering strictly enforced.
 - [x] Public sample concordance: 100.0% status accuracy.

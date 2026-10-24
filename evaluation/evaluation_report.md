@@ -1,6 +1,6 @@
 # Evaluation Report — Ghost Data Still Exists
 **HackerRank Orchestrate (October 2026)**  
-**Generated At:** 2026-10-25T03:10:00  
+**Generated At:** 2026-10-25T03:49:22.946727  
 **Deterministic Output SHA-256 Digest:** `7d0c26e265c7d723bc19414e86670e45cfb806425dca656972ecb933f76a26bb`  
 **Evaluation Status:** Strict Quality Gate Verified (Untrusted Validator: 0 Errors)
 
@@ -12,10 +12,10 @@ This evaluation report documents the comprehensive verification, adversarial str
 
 The system was evaluated against:
 1. **518 Full Evaluation Requests** (`dataset/deletion_requests.csv`): 100% compliant prediction generation with zero schema, ordering, temporal, or evidence defects.
-2. **Strict Untrusted Output Validation**: 0 schema errors across 518 rows, 2,588 steps, and all canonical priority invariants.
+2. **Strict Untrusted Output Validation**: 0 schema errors across 518 rows, 2,600 steps, and all canonical priority invariants.
 3. **Multi-Run Bit-for-Bit Determinism**: Verified identical SHA-256 digest (`7d0c26e265c7d723bc19414e86670e45cfb806425dca656972ecb933f76a26bb`) across consecutive independent pipeline runs.
-4. **Adversarial Suites** (`code/tests/test_adversarial_suite.py`, `test_reviewer_b_adversarial.py`): 24 adversarial tests passing across all risk dimensions.
-5. **110-Test Complete Regression Suite**: 110/110 unit tests passing in 0.39s.
+4. **16-Case Adversarial Suite** (`code/tests/test_adversarial_suite.py`): 16/16 tests passing across all required risk dimensions.
+5. **94-Test Complete Regression Suite**: 94/94 unit tests passing in 0.67s.
 6. **Public Benchmark Concordance**: **32/32 (100.0%) Status Accuracy** on `dataset/sample_output.csv`.
 
 ---
@@ -73,8 +73,8 @@ To stress-test edge cases not explicitly guaranteed in simple test datasets, 16 
 |---|---|---|---|---|---|
 | 1 | `test_01_historical_email` | Request uses older changed email alias; records remain under current email | `INCOMPLETE` | Historical aliases cannot evade audit; ghost data under all identities found | **PASSED** |
 | 2 | `test_02_identifier_collision` | Distinct users share an ambiguous phone number; target requests deletion | `COMPLETE` | Multi-tenant isolation; no collateral deletion of unrelated user data | **PASSED** |
-| 3 | `test_03_stale_evidence` | Stale $t_0$ presence record superseded by subsequent $t_1 < audit\_at$ deletion | `COMPLETE` | No false positives from outdated historical logs | **PASSED** |
-| 4 | `test_04_post_audit_evidence` | Record was present at $audit\_at$; deleted only after $audit\_at$ | `INCOMPLETE` | Post-audit remediation claims cannot retroactively certify pre-audit compliance | **PASSED** |
+| 3 | `test_03_stale_evidence` | Stale $t_0$ presence record superseded by subsequent $t_1 < \text{audit\_at}$ deletion | `COMPLETE` | No false positives from outdated historical logs | **PASSED** |
+| 4 | `test_04_post_audit_evidence` | Record was present at $\text{audit\_at}$; deleted only after $\text{audit\_at}$ | `INCOMPLETE` | Post-audit remediation claims cannot retroactively certify pre-audit compliance | **PASSED** |
 | 5 | `test_05_active_sync` | Primary DB deleted, but active replication sync flow runs to secondary cache | `INCOMPLETE` | Active recreation pathways prevent declaration of completion until severed | **PASSED** |
 | 6 | `test_06_inactive_sync` | Sync connector is configured but explicitly verified `disabled=True` | `COMPLETE` | Inactive dormant pipelines do not generate false positive remediation actions | **PASSED** |
 | 7 | `test_07_backup_restore_risk` | Backup exists in cold storage with `deletion_block=False` and `restore_allowed=True` | `INCOMPLETE` | Backup archives without restore sanitization/blocks fail deletion guarantee | **PASSED** |
@@ -98,7 +98,7 @@ During Phase 7 untrusted validation, all discovered anomalies were systematicall
 |---|---|---|---|
 | `IDENTITY` | Identifier resolution, alias matching, multi-hop linking | Historical email resolution in upper-case domains | Normalized all identity lookups with case-insensitive lowercase matching |
 | `EVIDENCE` | File parsing, trace correlation, missing observations | 28 cases initially had 0 observations due to unparsed log formats | Enhanced `LogExtractor` to parse RFC 5424 Syslog, Pipe-delimited logs, bracketed traces, and JSON logs with multi-line trace correlation |
-| `TEMPORAL` | Cutoff filtering, snapshot state evaluation | Post-audit observations contaminating cutoff state | Enforced strict $t \le audit\_at$ temporal boundary across all extractors |
+| `TEMPORAL` | Cutoff filtering, snapshot state evaluation | Post-audit observations contaminating cutoff state | Enforced strict t <= audit_at temporal boundary across all extractors |
 | `POLICY` | Rule parsing, action mapping, state constraints | `LINK_RESOURCE_IDENTITY` mapped to `UNKNOWN` | Mapped successful `LINK_RESOURCE_IDENTITY` to `ObservedState.PRESENT` in `evidence_normalizer.py` |
 | `RECREATION` | Active sync flow detection, restore risks | Missed unblocked backups with `deletion_block=false` | Added `deletion_block` and `restore_allowed` evaluators in `LogExtractor` and `JsonExtractor` |
 | `RETENTION` | Statutory preservation, tombstones | Tombstone PII stripping vs internal user reference | Permitted `ACCOUNT_TOMBSTONE` with stable reference and verified PII redaction |

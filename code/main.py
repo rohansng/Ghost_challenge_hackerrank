@@ -41,8 +41,12 @@ logger = logging.getLogger("ghost_data.engine")
 class DeletionAuditEngine:
     """Primary autonomous deletion audit engine orchestrating all sub-systems."""
 
-    def __init__(self, config: Optional[EngineConfig] = None, dataset_dir: str = "dataset"):
-        if config is not None:
+    def __init__(self, config: Optional[Union[EngineConfig, str]] = None, dataset_dir: str = "dataset"):
+        if isinstance(config, EngineConfig):
+            self.config = config
+        elif isinstance(config, str):
+            self.config = EngineConfig(dataset_dir=config)
+        elif config is not None:
             self.config = config
         else:
             self.config = EngineConfig(dataset_dir=dataset_dir)
