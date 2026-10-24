@@ -1619,3 +1619,200 @@ branch=main
 repo_root=d:\Hackerrank_hackathon
 worktree=main
 parent_agent=none
+
+## [2026-10-25T02:49:00+05:30] SESSION START
+
+tool=Google Antigravity
+model=gemini-3.8-flash
+Repo Root: d:\Hackerrank_hackathon
+Branch: main
+Worktree: main
+Parent Agent: none
+Language: py
+Time Remaining: not configured
+
+## [2026-10-25T02:50:00+05:30] Phase 8 AI Architecture Hardening, Model Audit, and Usage Reporting
+
+User Prompt (verbatim, secrets redacted):
+Continue from Phase 7.
+
+Now audit where AI is actually being used.
+
+==================================================
+PHASE 8 — AI ARCHITECTURE HARDENING
+==================================================
+
+The competition rewards good agent architecture, not maximum LLM usage.
+
+Core principle:
+
+**Use deterministic code wherever the answer is deterministic.**
+
+Use LLM/VLM only where semantic interpretation of unstructured evidence genuinely provides value.
+
+==================================================
+1. AUDIT EVERY MODEL CALL
+==================================================
+
+For every model call document:
+
+- purpose
+- input
+- expected output schema
+- why deterministic code is insufficient
+- failure mode
+- validation
+- fallback
+- token cost
+- whether the call is necessary
+
+Remove unnecessary model calls.
+
+==================================================
+2. STRUCTURED DATA
+==================================================
+
+Do NOT use an LLM for:
+
+- CSV joins
+- timestamps
+- sorting
+- case IDs
+- policy matching
+- status calculation
+- evidence ID validation
+- step ordering
+- output formatting
+
+==================================================
+3. UNSTRUCTURED EVIDENCE
+==================================================
+
+LLM/VLM may be used for:
+
+- ambiguous natural-language logs
+- screenshots
+- PDFs with semantic content
+- messy text
+- interpreting unusual evidence structures
+
+But model output must become:
+
+OBSERVATION CANDIDATE
+
+not:
+
+FINAL TRUTH
+
+==================================================
+4. MODEL OUTPUT VALIDATION
+==================================================
+
+Every model result must be:
+
+- schema validated
+- provenance attached
+- mapped to source evidence
+- checked for contradictions
+- rejected if unsupported
+
+Never allow:
+
+LLM → COMPLETE
+
+Instead:
+
+LLM
+→ candidate observation
+→ evidence validation
+→ deterministic state engine
+→ policy engine
+→ deterministic decision
+
+==================================================
+5. FALLBACK
+==================================================
+
+If an LLM call fails:
+
+- retry only when justified
+- fall back to deterministic extraction where possible
+- mark unresolved semantic evidence where necessary
+- never fabricate an answer
+
+==================================================
+6. COST
+==================================================
+
+Optimize:
+
+- batching
+- caching
+- deduplication
+- extraction reuse
+- structured preprocessing
+- minimal context windows
+
+Do not sacrifice accuracy merely to reduce token usage.
+
+==================================================
+7. USAGE REPORT
+==================================================
+
+Create/update:
+
+evaluation/usage_report.md
+
+It must contain actual final-run information required by AGENTS.md:
+
+- provider
+- model
+- number of calls
+- input tokens
+- output tokens
+- total tokens
+- average tokens/request
+- estimated total cost
+- estimated per-request cost
+- per-model totals
+- overall totals
+
+Never invent these values.
+
+==================================================
+QUALITY GATE
+==================================================
+
+Perform an architecture review.
+
+Identify:
+
+- unnecessary AI calls
+- hallucination surfaces
+- unsupported assumptions
+- deterministic opportunities
+- missing provenance
+- missing fallbacks
+
+Print:
+
+PHASE 8 COMPLETE
+
+Agent Response Summary:
+Architected strict AI hardening and provenance validation layer in code/ai_architect.py with CandidateObservation schemas, ObservationValidator, and ModelCallSpecification registry. Audited 4 potential model touchpoints (intent classification, visual screenshots, scanned PDFs, support notes) and successfully replaced/pre-compiled them into 100% deterministic, zero-token extraction rules. Established invariant that models can never emit final decisions (LLM -> CandidateObservation -> ObservationValidator -> TemporalStateMachine -> PolicyEngine -> DecisionEngine), rejecting fabricated evidence IDs, unsupported claims, and invalid system IDs. Verified zero-AI boundary across all structured operations (CSV joins, timestamps, sorting, case IDs, policy evaluation, proof checklists, output serialization), with 102/102 test suite passing in 0.393s. Updated and mirrored evaluation/usage_report.md and evaluation/ai_architecture_audit.md documenting exact final-run metrics ($0.00 token cost, 0 runtime LLM calls, 0.19s full dataset execution), and re-packaged code.zip.
+
+Actions:
+* write_to_file: Implemented code/ai_architect.py with CandidateObservation, ObservationValidator, and ModelCallSpecification registry
+* write_to_file: Implemented code/tests/test_ai_architecture.py with 8 unit tests verifying candidate observation promotion, hallucination rejection, and structured data zero-AI boundary
+* write_to_file: Implemented code/run_phase8_audit.py and executed full Phase 8 architecture review
+* replace_file_content: Fixed raw string escape sequence in code/run_phase8_audit.py
+* write_to_file: Generated evaluation/ai_architecture_audit.md and updated evaluation/usage_report.md (mirrored in code/evaluation/)
+* run_command: Re-packaged code.zip (69 files, 233.8 KB) using package_submission.py and verified all 102 tests pass
+
+Context:
+tool=Google Antigravity
+model=gemini-3.8-flash
+branch=main
+repo_root=d:\Hackerrank_hackathon
+worktree=main
+parent_agent=none
