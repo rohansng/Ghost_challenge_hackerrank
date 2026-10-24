@@ -300,50 +300,75 @@ class JsonExtractor:
         captured_at: Optional[datetime],
         seq: str,
     ) -> Optional[EvidenceObservation]:
+        system_override = rec.get("system") or rec.get("service")
+        if system_override:
+            system_id = system_override
         res_id = rec.get("resource_id", f"{system_id}_{seq}")
         obs_id = f"{file_id}_{system_id}_{seq}"
-        user_id = rec.get("customer_reference") or rec.get("user_id") or rec.get("subject_reference")
-        email = rec.get("email") or rec.get("owner_email") or rec.get("customer_email") or rec.get("requester_email")
+        user_id = rec.get("customer_reference") or rec.get("user_id") or rec.get("subject_reference") or rec.get("subject_ref")
+        email = (
+            rec.get("email")
+            or rec.get("owner_email")
+            or rec.get("customer_email")
+            or rec.get("requester_email")
+            or rec.get("lookup_value")
+            or rec.get("lookup_key")
+        )
         phone = rec.get("phone") or rec.get("owner_phone") or rec.get("requester_phone")
         email_hash = rec.get("email_hash")
-        obs_time = parse_iso(rec.get("updated_at") or rec.get("captured_at")) or captured_at
+        obs_time = parse_iso(rec.get("recorded_at") or rec.get("updated_at") or rec.get("captured_at")) or captured_at
 
-        if "tombstone" in collection or "deleted_customer" in collection or system_id == "identity_service" or res_id.startswith("tombstone_"):
+        # Determine category
+        rec_type = rec.get("record_type")
+        if rec_type:
+            cat = rec_type
+        elif "tombstone" in collection or "deleted_customer" in collection or system_id == "identity_service" or res_id.startswith("tombstone_"):
             cat = "ACCOUNT_TOMBSTONE"
-            has_pii = bool(email or phone or email_hash)
-            state = ObservedState.PRESENT if has_pii else ObservedState.REDACTED
         elif "profile" in collection or system_id == "account_service":
             cat = "USER_PROFILE"
+        elif "search" in collection or system_id == "search_service":
+            cat = "SEARCH_INDEX_ENTRY"
+        elif "analytics" in collection or system_id == "analytics_platform":
+            cat = "ANALYTICS_PROFILE"
+        elif "support" in collection or system_id == "support_platform":
+            is_att = "attachment" in collection.lower()
+            cat = "SUPPORT_ATTACHMENT" if is_att else "SUPPORT_MESSAGE"
+        elif "export" in collection or system_id == "export_service":
+            cat = "USER_EXPORT"
+        elif "connector" in collection or system_id == "integration_service":
+            cat = "CONNECTOR_SUBSCRIPTION"
+        elif "backup" in collection or system_id == "backup_service":
+            cat = "BACKUP_ARCHIVE"
+        elif "security" in collection or system_id == "security_service":
+            cat = "SECURITY_AUDIT_LOG"
+        else:
+            cat = "USER_PROFILE"
+
+        # Determine state
+        res_val = str(rec.get("result", "")).upper()
+        if res_val in ("NOT_FOUND", "MISS"):
+            state = ObservedState.ABSENT
+        elif res_val in ("FOUND", "HIT", "IDENTIFIABLE"):
+            state = ObservedState.PRESENT
+        elif cat == "ACCOUNT_TOMBSTONE":
+            has_pii = bool(email or phone or email_hash)
+            state = ObservedState.PRESENT if has_pii else ObservedState.REDACTED
+        elif cat == "USER_PROFILE":
             state = ObservedState.PRESENT
             if user_id and not email and not phone:
                 cat = "ACCOUNT_TOMBSTONE"
                 state = ObservedState.REDACTED
-        elif "search" in collection or system_id == "search_service":
-            cat = "SEARCH_INDEX_ENTRY"
-            state = ObservedState.PRESENT
-        elif "analytics" in collection or system_id == "analytics_platform":
-            cat = "ANALYTICS_PROFILE"
+        elif cat == "ANALYTICS_PROFILE":
             state = ObservedState.ANONYMIZED if (not email and not phone and not user_id and not email_hash) else ObservedState.PRESENT
-        elif "support" in collection or system_id == "support_platform":
-            is_att = "attachment" in collection.lower()
-            cat = "SUPPORT_ATTACHMENT" if is_att else "SUPPORT_MESSAGE"
+        elif cat in ("SUPPORT_MESSAGE", "SUPPORT_ATTACHMENT"):
             state = ObservedState.REDACTED if (not email and not phone and user_id) else ObservedState.PRESENT
-        elif "export" in collection or system_id == "export_service":
-            cat = "USER_EXPORT"
-            state = ObservedState.PRESENT
-        elif "connector" in collection or system_id == "integration_service":
-            cat = "CONNECTOR_SUBSCRIPTION"
+        elif cat == "CONNECTOR_SUBSCRIPTION":
             enabled = rec.get("enabled", False)
             state = ObservedState.ACTIVE if enabled else ObservedState.DISABLED
-        elif "backup" in collection or system_id == "backup_service":
-            cat = "BACKUP_ARCHIVE"
+        elif cat == "BACKUP_ARCHIVE":
             restore_allowed = rec.get("restore_allowed", False)
             state = ObservedState.ACTIVE if restore_allowed else ObservedState.BLOCKED
-        elif "security" in collection or system_id == "security_service":
-            cat = "SECURITY_AUDIT_LOG"
-            state = ObservedState.PRESENT
         else:
-            cat = "USER_PROFILE"
             state = ObservedState.PRESENT
 
         return EvidenceObservation(

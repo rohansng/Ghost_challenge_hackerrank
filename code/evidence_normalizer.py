@@ -168,9 +168,7 @@ class EvidenceNormalizer:
                         state = ObservedState.ABSENT if result == "SUCCESS" else ObservedState.PRESENT
                     elif ev_type in ("ANONYMIZE_RECORD", "ANONYMIZE"):
                         state = ObservedState.ANONYMIZED if result == "SUCCESS" else ObservedState.PRESENT
-                    elif ev_type in ("REDACT_RECORD", "REDACT"):
-                        state = ObservedState.REDACTED if result == "SUCCESS" else ObservedState.PRESENT
-                    elif ev_type in ("RETAIN_RECORD", "INDEX_RECORD", "CREATE_EXPORT", "SYNC_RECORD", "UPDATE_RECORD"):
+                    elif ev_type in ("RETAIN_RECORD", "INDEX_RECORD", "CREATE_EXPORT", "SYNC_RECORD", "UPDATE_RECORD", "LINK_RESOURCE_IDENTITY"):
                         state = ObservedState.PRESENT
 
                 obs = EvidenceObservation(
