@@ -22,6 +22,7 @@ from code.evidence_normalizer import EvidenceNormalizer
 from code.temporal_state_machine import TemporalStateMachine
 from code.policy_engine import PolicyEngine
 from code.remediation_planner import RemediationPlanner
+from code.decision_engine import DecisionEngine
 from code.models import DeletionStatus, Step
 
 
@@ -34,6 +35,7 @@ class DeletionAuditEngine:
         self.tsm = TemporalStateMachine()
         self.policy_engine = PolicyEngine()
         self.planner = RemediationPlanner()
+        self.decision_engine = DecisionEngine()
         self.identity_engine = None
 
     def initialize(self):
@@ -48,28 +50,32 @@ class DeletionAuditEngine:
         total_obs = self.normalizer.load_and_extract_all()
         print(f"      Extracted {total_obs:,} observations.")
 
-    def process_request(self, req) -> Tuple[DeletionStatus, List[Step]]:
+    def process_request(self, req, return_proof: bool = False):
         # 1. Determine request authorization
         is_deletion, req_type, rationale = self.intent_classifier.classify(req.request_text)
-        if not is_deletion:
-            return DeletionStatus.NOT_APPLICABLE, []
 
         # 2. Resolve identity
         res = self.identity_engine.resolve_identity(req.email)
         user_id = res.canonical_user_id if res else None
 
         identifiers = {req.email.lower()}
+        phones = set()
+        hashes = set()
         if res and res.identity_node:
             identifiers.update(e.lower() for e in res.identity_node.all_emails)
+            phones.update(p for p in res.identity_node.all_phones if p)
+            hashes.update(h.lower() for h in res.identity_node.all_hashes if h)
 
         # 3. Retrieve matching candidate observations
         candidate_obs = self.normalizer.get_observations_for_subject(
             user_id=user_id,
             emails=identifiers,
-        )
+            phones=phones,
+            hashes=hashes,
+        ) if is_deletion else []
 
         # 4. Temporal state reconstruction at audit_at
-        snapshots = self.tsm.evaluate_resource_states_at_audit(candidate_obs, req.audit_at)
+        snapshots = self.tsm.evaluate_resource_states_at_audit(candidate_obs, req.audit_at) if is_deletion else {}
 
         # 5. Evaluate policy on all reconstructed resources
         evaluated_resources = []
@@ -84,7 +90,20 @@ class DeletionAuditEngine:
             evaluated_resources=evaluated_resources,
         )
 
-        return status, steps
+        # 7. Complete explainable CaseProof evaluation
+        proof = self.decision_engine.evaluate_case(
+            request=req,
+            is_deletion_authorized=is_deletion,
+            identity_res=res,
+            all_observations=candidate_obs,
+            snapshots=snapshots,
+            evaluated_resources=evaluated_resources,
+            steps=steps,
+        )
+
+        if return_proof:
+            return proof.final_decision, proof.steps, proof
+        return proof.final_decision, proof.steps
 
     def run_evaluation(self, output_csv_path: str = "output.csv") -> Dict[str, Any]:
         self.initialize()

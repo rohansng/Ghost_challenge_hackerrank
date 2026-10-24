@@ -308,7 +308,11 @@ class JsonExtractor:
         email_hash = rec.get("email_hash")
         obs_time = parse_iso(rec.get("updated_at") or rec.get("captured_at")) or captured_at
 
-        if "profile" in collection or system_id == "account_service":
+        if "tombstone" in collection or "deleted_customer" in collection or system_id == "identity_service" or res_id.startswith("tombstone_"):
+            cat = "ACCOUNT_TOMBSTONE"
+            has_pii = bool(email or phone or email_hash)
+            state = ObservedState.PRESENT if has_pii else ObservedState.REDACTED
+        elif "profile" in collection or system_id == "account_service":
             cat = "USER_PROFILE"
             state = ObservedState.PRESENT
             if user_id and not email and not phone:

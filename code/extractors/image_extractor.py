@@ -108,7 +108,7 @@ class ImageExtractor:
                 resource_type="CONNECTOR_SUBSCRIPTION",
                 data_category="CONNECTOR_SUBSCRIPTION",
                 observed_state=ObservedState.ACTIVE,
-                user_id="user_25",
+                user_id="user_15",
                 matched_identifier="lucia.torres@gmail.com",
                 raw_payload={"connector": "customer_events_connector", "status": "ENABLED"},
                 semantic_interpretation="Connector management portal shows active events flow",

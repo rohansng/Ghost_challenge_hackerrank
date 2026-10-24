@@ -37,12 +37,32 @@ class LogExtractor:
         except Exception:
             return observations
 
+        # Pass 1: Build trace_context to correlate across multi-line operations
+        trace_context: Dict[str, Dict[str, Any]] = {}
+        for raw_line in lines:
+            line = raw_line.strip()
+            if not line:
+                continue
+            trace_m = re.search(r'\btrace_id=(?:\"([^\"]*)\"|(\S+))', line)
+            if trace_m:
+                tid = trace_m.group(1) or trace_m.group(2)
+                ctx = trace_context.setdefault(tid, {})
+                for k, v1, v2 in re.findall(r'(\b\w+)=(?:\"([^\"]*)\"|(\S+))', line):
+                    v = v1 if v1 else v2
+                    if k in ("email", "lookup_key", "customer_email") and "@" in v:
+                        ctx["email"] = v.lower()
+                    elif k in ("user_id", "customer_reference", "subject_reference") and v.startswith("user_"):
+                        ctx["user_id"] = v
+                    elif k in ("correlation_key", "email_hash") and len(v) == 64:
+                        ctx["hash"] = v.lower()
+
+        # Pass 2: Parse individual lines with inherited trace context
         for line_no, raw_line in enumerate(lines, start=1):
             line = raw_line.strip()
             if not line:
                 continue
 
-            obs = self._parse_line(line, file_id, rel_path, manifest_captured_at, line_no)
+            obs = self._parse_line(line, file_id, rel_path, manifest_captured_at, line_no, trace_context)
             if obs:
                 observations.append(obs)
 
@@ -55,6 +75,7 @@ class LogExtractor:
         rel_path: str,
         manifest_captured_at: Optional[datetime],
         line_no: int,
+        trace_context: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> Optional[EvidenceObservation]:
         # Extract leading timestamp
         ts_match = re.match(r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)", line)
@@ -117,7 +138,7 @@ class LogExtractor:
             cat = "USER_PROFILE"
 
         # Check identifiers
-        email = (
+        raw_ident = (
             kv_pairs.get("email")
             or kv_pairs.get("lookup_key")
             or kv_pairs.get("correlation_key")
@@ -126,11 +147,28 @@ class LogExtractor:
             or kv_pairs.get("subject_reference")
             or kv_pairs.get("customer_email")
         )
-        if email and "@" not in email:
-            user_id = email
-            email = None
-        else:
-            user_id = kv_pairs.get("customer_reference") or kv_pairs.get("subject_reference")
+        email = None
+        user_id = kv_pairs.get("customer_reference") or kv_pairs.get("subject_reference")
+        hash_val = None
+
+        if raw_ident:
+            if "@" in raw_ident:
+                email = raw_ident.lower()
+            elif raw_ident.startswith("user_"):
+                user_id = raw_ident
+            elif len(raw_ident) == 64 and all(c in "0123456789abcdefABCDEF" for c in raw_ident):
+                hash_val = raw_ident.lower()
+
+        # Inherit trace context if missing
+        tid = kv_pairs.get("trace_id")
+        if tid and trace_context and tid in trace_context:
+            t_ctx = trace_context[tid]
+            if not email and "email" in t_ctx:
+                email = t_ctx["email"]
+            if not user_id and "user_id" in t_ctx:
+                user_id = t_ctx["user_id"]
+            if not hash_val and "hash" in t_ctx:
+                hash_val = t_ctx["hash"]
 
         # Determine state
         state = ObservedState.UNKNOWN
@@ -173,6 +211,10 @@ class LogExtractor:
             marker = kv_pairs["marker_found"].lower() == "true"
             state = ObservedState.ABSENT if marker else ObservedState.PRESENT
 
+        supp_idents = []
+        if hash_val:
+            supp_idents.append(hash_val)
+
         if resource_id and state != ObservedState.UNKNOWN:
             return EvidenceObservation(
                 observation_id=obs_id,
@@ -188,7 +230,8 @@ class LogExtractor:
                 data_category=cat,
                 observed_state=state,
                 user_id=user_id,
-                matched_identifier=email,
+                matched_identifier=email or hash_val or user_id,
+                supporting_identifiers=supp_idents,
                 raw_payload=kv_pairs,
                 semantic_interpretation=f"Log event {event}: {resource_id} -> {state.value}",
             )

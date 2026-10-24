@@ -209,17 +209,22 @@ class EvidenceNormalizer:
             if obs.user_id:
                 self.obs_by_user_id[obs.user_id].append(obs)
             if obs.matched_identifier:
-                clean_email = normalize_email(obs.matched_identifier)
-                if "@" in clean_email:
-                    self.obs_by_email[clean_email].append(obs)
-                elif clean_email.startswith("user_"):
-                    self.obs_by_user_id[clean_email].append(obs)
+                clean = obs.matched_identifier.strip()
+                if "@" in clean:
+                    self.obs_by_email[normalize_email(clean)].append(obs)
+                elif clean.startswith("user_"):
+                    self.obs_by_user_id[clean].append(obs)
+                elif len(clean) == 64 and all(c in "0123456789abcdefABCDEF" for c in clean):
+                    self.obs_by_hash[clean.lower()].append(obs)
 
             for supp in obs.supporting_identifiers:
-                if "@" in supp:
-                    self.obs_by_email[normalize_email(supp)].append(obs)
-                elif any(c.isdigit() for c in supp) and len(supp) > 6:
-                    self.obs_by_phone[normalize_phone(supp)].append(obs)
+                clean_supp = supp.strip()
+                if "@" in clean_supp:
+                    self.obs_by_email[normalize_email(clean_supp)].append(obs)
+                elif any(c.isdigit() for c in clean_supp) and len(clean_supp) > 6:
+                    self.obs_by_phone[normalize_phone(clean_supp)].append(obs)
+                elif len(clean_supp) == 64 and all(c in "0123456789abcdefABCDEF" for c in clean_supp):
+                    self.obs_by_hash[clean_supp.lower()].append(obs)
 
             if obs.resource_id:
                 self.obs_by_resource_id[obs.resource_id].append(obs)
@@ -233,9 +238,10 @@ class EvidenceNormalizer:
         phones: Set[str] = None,
         hashes: Set[str] = None,
     ) -> List[EvidenceObservation]:
-        """Deterministically retrieves all observations linked to the subject without contamination."""
+        """Deterministically retrieves all observations linked to the subject without contamination, with 2-pass transitive resource expansion."""
         matched: Dict[str, EvidenceObservation] = {}
 
+        # Pass 1: Direct identity matching
         if user_id and user_id in self.obs_by_user_id:
             for obs in self.obs_by_user_id[user_id]:
                 matched[obs.observation_id] = obs
@@ -259,6 +265,13 @@ class EvidenceNormalizer:
                 if clean_h in self.obs_by_hash:
                     for obs in self.obs_by_hash[clean_h]:
                         matched[obs.observation_id] = obs
+
+        # Pass 2: Transitive resource expansion for proven subject resources (e.g. 404 deletion verification lookups)
+        known_resources = {obs.resource_id for obs in matched.values() if obs.resource_id}
+        for r_id in known_resources:
+            if r_id in self.obs_by_resource_id:
+                for obs in self.obs_by_resource_id[r_id]:
+                    matched[obs.observation_id] = obs
 
         # Return sorted deterministically by event_time, then observation_id
         return sorted(
