@@ -44,11 +44,11 @@ The solution is implemented as a 100% standard-library Python architecture requi
 - **Multilingual Request Intent Classifier:** Analyzes request text across 6 languages (English, French, Spanish, Portuguese, Japanese, Korean) to detect whether deletion is authorized.
 - **Multi-Hop Temporal Identity Engine:** Traverses audit logs chronologically to resolve the complete subject graph (current and past emails, phone numbers, and pseudonymized hashes).
 - **Multi-Modal Evidence Normalizer:** Ingests and indexes all 94 participant-visible evidence files across SQLite snapshots, structured JSON/JSONL records, Syslog/trace logs, plain-text notes, and decompressed PDF streams.
-- **Strict Temporal State Machine:** Filters and reconciles observations strictly at $t \le \text{audit\_at}$, preventing information leakage from subsequent events.
+- **Strict Temporal State Machine:** Filters and reconciles observations strictly at `t <= audit_at`, preventing information leakage from subsequent events.
 - **Directed Recreation Analyzer:** Constructs a directed `DataFlowGraph` from `system_activity.csv` to detect active synchronization pipelines and unrestrained backup restore risks.
 - **Rule-Based Policy Engine:** Evaluates predicates from `deletion_rules.csv` for `DELETE`, `REDACT`, `ANONYMIZE`, `RETAIN`, and `ACCOUNT_TOMBSTONE` treatments.
 - **Internal 11-Condition Decision Model:** Evaluates an explainable proof checklist to establish whether deletion completeness is proven.
-- **Canonical Step Planner:** Emits strictly ordered steps following canonical phase progression (`FINDING` $\to$ `REMEDIATION` $\to$ `VERIFICATION`), exact operation priority ranks, and alphabetical tie-breaking.
+- **Canonical Step Planner:** Emits strictly ordered steps following canonical phase progression (`FINDING` -> `REMEDIATION` -> `VERIFICATION`), exact operation priority ranks, and alphabetical tie-breaking.
 - **Strict Untrusted Output Validator:** Verifies all 518 output rows against schema, provenance, ordering, and evidence constraints.
 
 ---
@@ -144,7 +144,7 @@ For each request in `dataset/deletion_requests.csv`, the audit pipeline executes
 1. **Request Intent Classification:** Analyzes `request_text` to verify whether deletion is authorized. If non-deletion intent is detected, classifies as `NOT_APPLICABLE` with `steps_json = []`.
 2. **Identity Resolution:** Maps the request email to a stable `user_id` and collects all current and historical emails, phone numbers, and SHA-256 email hashes.
 3. **Evidence Extraction & Normalization:** Retrieves evidence observations matching any subject identifier or related resource ID from the indexed multi-modal evidence store.
-4. **Temporal Bounding ($t \le \text{audit\_at}$):** Excludes observations captured or timestamped strictly after `audit_at`.
+4. **Temporal Bounding (`t <= audit_at`):** Excludes observations captured or timestamped strictly after `audit_at`.
 5. **Recreation & Restore Analysis:** Evaluates active data flows and backup restore paths from `system_activity.csv`.
 6. **Policy Evaluation:** Matches resource categories against `deletion_rules.csv` to determine required states (`ABSENT`, `REDACTED`, `ANONYMIZED`, `PRESENT`).
 7. **Decision & Step Planning:** Evaluates the internal 11-condition proof checklist, assigns the final deletion status, and constructs canonical, ordered steps.
@@ -155,7 +155,7 @@ For each request in `dataset/deletion_requests.csv`, the audit pipeline executes
 
 The [`IdentityEngine`](file:///d:/Hackerrank_hackathon/code/identity_engine.py) performs bidirectional identity reconstruction:
 
-- **Current Snapshot Ingestion:** Ingests `user_identities.csv` to map `email` $\leftrightarrow$ `user_id`, phone numbers, and pre-computed email hashes.
+- **Current Snapshot Ingestion:** Ingests `user_identities.csv` to map `email` <-> `user_id`, phone numbers, and pre-computed email hashes.
 - **Historical Audit Traversal:** Traverses `user_audit_log.csv` chronologically to track email changes, name modifications, and telephone updates.
 - **Multi-Hop Search Space:** Resolves queries where the request email is a historical address that has since been replaced in `user_identities.csv`.
 - **Conflict Handling:** Flags any ambiguous identity links (such as multiple user IDs claiming the same identifier) for incomplete status handling.
@@ -183,7 +183,7 @@ The [`TemporalStateMachine`](file:///d:/Hackerrank_hackathon/code/temporal_state
 
 - **Strict Temporal Barrier:** Any evidence observation with `captured_at > audit_at` or `event_time > audit_at` is strictly discarded from state reconstruction.
 - **Precedence Rules:** Physical evidence (database dumps, files, logs) takes precedence over self-reported workflow claims (`reported_status`).
-- **Conflict Resolution:** When multiple physical observations exist within $t \le \text{audit\_at}$, the observation with the latest timestamp dictates the reconstructed state.
+- **Conflict Resolution:** When multiple physical observations exist within `t <= audit_at`, the observation with the latest timestamp dictates the reconstructed state.
 - **No Backward Information Leakage:** Replicas and snapshots lacking explicit event timestamps use the authoritative `captured_at` from `evidence_files.csv`. If an observation's capture time is after `audit_at`, it cannot influence the historical audit.
 
 ---
@@ -261,9 +261,9 @@ The [`RemediationPlanner`](file:///d:/Hackerrank_hackathon/code/remediation_plan
 3. **`VERIFICATION`** (Phase 3): Specifies checks confirming required end states.
 
 ### Operation Priority Within Phases
-- **Findings:** `REPORT_REMAINING_RECORD` $\to$ `REPORT_EXPOSED_PII` $\to$ `REPORT_ACTIVE_DATA_FLOW` $\to$ `REPORT_RESTORE_RISK`.
-- **Remediations:** `DISABLE_DATA_FLOW` $\to$ `BLOCK_RESTORE` $\to$ `DELETE_RECORD` $\to$ `REDACT_RECORD` $\to$ `ANONYMIZE_RECORD`.
-- **Verifications:** `VERIFY_RECORD_ABSENT` $\to$ `VERIFY_RECORD_PRESENT` $\to$ `VERIFY_RECORD_REDACTED` $\to$ `VERIFY_RECORD_ANONYMIZED` $\to$ `VERIFY_DATA_FLOW_DISABLED` $\to$ `VERIFY_RESTORE_BLOCKED`.
+- **Findings:** `REPORT_REMAINING_RECORD` -> `REPORT_EXPOSED_PII` -> `REPORT_ACTIVE_DATA_FLOW` -> `REPORT_RESTORE_RISK`.
+- **Remediations:** `DISABLE_DATA_FLOW` -> `BLOCK_RESTORE` -> `DELETE_RECORD` -> `REDACT_RECORD` -> `ANONYMIZE_RECORD`.
+- **Verifications:** `VERIFY_RECORD_ABSENT` -> `VERIFY_RECORD_PRESENT` -> `VERIFY_RECORD_REDACTED` -> `VERIFY_RECORD_ANONYMIZED` -> `VERIFY_DATA_FLOW_DISABLED` -> `VERIFY_RESTORE_BLOCKED`.
 
 ### Secondary Tie-Breaking & Step Numbering
 When phase and operation ranks match, steps are ordered alphabetically by `system_id`, then `resource_id`. Step numbers (`step_no`) are consecutive integers starting at 1.
