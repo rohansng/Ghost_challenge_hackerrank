@@ -6,6 +6,7 @@ Builds an inverted index for fast, deterministic retrieval of evidence by user i
 
 import os
 import csv
+import re
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Set
 from collections import defaultdict
@@ -104,18 +105,73 @@ class EvidenceNormalizer:
                 details = row["details"]
 
                 state = ObservedState.UNKNOWN
-                if ev_type in ("DELETE_RECORD", "DELETE"):
-                    state = ObservedState.ABSENT if result == "SUCCESS" else ObservedState.PRESENT
-                elif ev_type in ("ANONYMIZE_RECORD", "ANONYMIZE"):
-                    state = ObservedState.ANONYMIZED if result == "SUCCESS" else ObservedState.PRESENT
-                elif ev_type in ("REDACT_RECORD", "REDACT"):
-                    state = ObservedState.REDACTED if result == "SUCCESS" else ObservedState.PRESENT
-                elif ev_type in ("DISABLE_DATA_FLOW",):
-                    state = ObservedState.DISABLED if result == "SUCCESS" else ObservedState.ACTIVE
-                elif ev_type in ("BLOCK_RESTORE",):
-                    state = ObservedState.BLOCKED if result == "SUCCESS" else ObservedState.ACTIVE
-                elif ev_type in ("RETAIN_RECORD", "INDEX_RECORD", "CREATE_EXPORT", "SYNC_RECORD", "UPDATE_RECORD"):
-                    state = ObservedState.PRESENT
+                user_id = None
+                matched_ident = None
+                supp_idents = []
+
+                # Extract identity linkage from details (e.g. LINK_RESOURCE_IDENTITY)
+                uid_m = re.search(r'\b(user_\d+)\b', details)
+                if uid_m:
+                    user_id = uid_m.group(1)
+
+                email_m = re.search(r'\b([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)\b', details)
+                if email_m:
+                    matched_ident = email_m.group(1).lower()
+
+                # Extract secondary / downstream resource mentions
+                downstream_m = re.search(r'downstream resource (\w+)', details)
+                if downstream_m:
+                    supp_idents.append(downstream_m.group(1))
+
+                # Infer data category and operational state
+                data_cat = ev_type
+                if "DATA_FLOW" in ev_type or "CONNECTOR" in ev_type or res_id.startswith("data_flow_"):
+                    data_cat = "CONNECTOR_SUBSCRIPTION"
+                    if ev_type == "CHECK_DATA_FLOW":
+                        state = ObservedState.ACTIVE if ("enabled" in details.lower() or result == "SUCCESS") else ObservedState.DISABLED
+                    elif ev_type == "DISABLE_DATA_FLOW":
+                        state = ObservedState.DISABLED if result == "SUCCESS" else ObservedState.ACTIVE
+                    else:
+                        state = ObservedState.ACTIVE
+                elif "RESTORE" in ev_type or "BACKUP" in ev_type or res_id.startswith("backup_"):
+                    data_cat = "BACKUP_ARCHIVE"
+                    if ev_type == "CHECK_RESTORE_ACCESS":
+                        state = ObservedState.ACTIVE if ("restored" in details.lower() or result == "SUCCESS") else ObservedState.BLOCKED
+                    elif ev_type == "BLOCK_RESTORE":
+                        state = ObservedState.BLOCKED if result == "SUCCESS" else ObservedState.ACTIVE
+                    else:
+                        state = ObservedState.ACTIVE
+                elif res_id.startswith("account_"):
+                    data_cat = "USER_PROFILE"
+                    if ev_type in ("DELETE_RECORD", "DELETE"):
+                        state = ObservedState.ABSENT if result == "SUCCESS" else ObservedState.PRESENT
+                elif res_id.startswith("search_"):
+                    data_cat = "SEARCH_INDEX_ENTRY"
+                    if ev_type in ("DELETE_RECORD", "DELETE"):
+                        state = ObservedState.ABSENT if result == "SUCCESS" else ObservedState.PRESENT
+                elif res_id.startswith("analytics_"):
+                    data_cat = "ANALYTICS_PROFILE"
+                    if ev_type in ("ANONYMIZE_RECORD", "ANONYMIZE"):
+                        state = ObservedState.ANONYMIZED if result == "SUCCESS" else ObservedState.PRESENT
+                elif res_id.startswith("cache_"):
+                    data_cat = "CACHE_ENTRY"
+                elif res_id.startswith("export_"):
+                    data_cat = "USER_EXPORT"
+                elif res_id.startswith("support_"):
+                    data_cat = "SUPPORT_MESSAGE"
+                    if ev_type in ("REDACT_RECORD", "REDACT"):
+                        state = ObservedState.REDACTED if result == "SUCCESS" else ObservedState.PRESENT
+                elif res_id.startswith("audit_record_"):
+                    data_cat = "SECURITY_AUDIT_LOG"
+                else:
+                    if ev_type in ("DELETE_RECORD", "DELETE"):
+                        state = ObservedState.ABSENT if result == "SUCCESS" else ObservedState.PRESENT
+                    elif ev_type in ("ANONYMIZE_RECORD", "ANONYMIZE"):
+                        state = ObservedState.ANONYMIZED if result == "SUCCESS" else ObservedState.PRESENT
+                    elif ev_type in ("REDACT_RECORD", "REDACT"):
+                        state = ObservedState.REDACTED if result == "SUCCESS" else ObservedState.PRESENT
+                    elif ev_type in ("RETAIN_RECORD", "INDEX_RECORD", "CREATE_EXPORT", "SYNC_RECORD", "UPDATE_RECORD"):
+                        state = ObservedState.PRESENT
 
                 obs = EvidenceObservation(
                     observation_id=f"activity_{act_id}",
@@ -127,15 +183,19 @@ class EvidenceNormalizer:
                     event_time=ts,
                     system_id=tgt_sys or src_sys,
                     resource_id=res_id,
-                    resource_type=ev_type,
-                    data_category=ev_type,
+                    resource_type=data_cat,
+                    data_category=data_cat,
                     observed_state=state,
+                    user_id=user_id,
+                    matched_identifier=matched_ident,
+                    supporting_identifiers=supp_idents,
                     raw_payload=row,
                     semantic_interpretation=f"Global system activity event: {ev_type} -> {result}",
                 )
                 obs_list.append(obs)
 
         return obs_list
+
 
     def _build_indexes(self) -> None:
         self.obs_by_user_id.clear()
