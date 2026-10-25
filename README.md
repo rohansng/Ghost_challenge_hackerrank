@@ -363,31 +363,8 @@ Full audit reports are documented in:
 
 ---
 
-## 19. Packaging & Submission Instructions
 
-### Creating `code.zip`
-To package the final submission archive strictly adhering to AGENTS.md §6.9:
-
-```bash
-python package_submission.py
-```
-
-The script verifies:
-- `dataset/` is excluded.
-- Virtual environments (`.venv`, `venv`, `node_modules`) are excluded.
-- Bytecode caches (`__pycache__`, `*.pyc`) are excluded.
-- Nested archive files (`*.zip`, `*.tar`, `*.gz`) are excluded.
-- Includes `README.md`, `AGENTS.md`, `problem_statement.md`, `evaluation/` reports, and all source code.
-
-### Submission Artifacts Checklist
-1. **`code.zip`:** Uploaded via the HackerRank competition interface.
-2. **`output.csv`:** Generated at the repository root with exactly 518 data rows.
-3. **`chat_transcript`:** The root `log.txt` tracking agent sessions and turns.
-4. **AI Interview:** Technical architecture and evidence reasoning ready for oral defense.
-
----
-
-## 20. Known Limitations & Edge-Case Handling
+## 19. Known Limitations & Edge-Case Handling
 
 1. **Unindexed Custom Binary Formats:** Evidence files must conform to supported modalities (SQL, JSON, plain text, Syslog, PDF, and administrative screenshot images). Proprietary binary protocols would require specialized parsers.
 2. **Ambiguous Historical Identity Chains:** If historical audit logs link conflicting user profiles without resolvable timestamps, the engine flags the conflict as an unresolved identity exception and marks the case as `INCOMPLETE`.
@@ -395,7 +372,7 @@ The script verifies:
 
 ---
 
-## 21. Reproducibility
+## 20. Reproducibility
 
 To reproduce the submission artifacts from scratch:
 
@@ -416,7 +393,7 @@ python package_submission.py
 
 ---
 
-## 22. License & Integrity
+## 21. License & Integrity
 
 This solution is authored for the **HackerRank Orchestrate (October 2026)** competition.  
 All data in `dataset/` is synthetic and fictional. No real personal data or secret credentials are used.
